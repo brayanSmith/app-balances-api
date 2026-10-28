@@ -137,12 +137,12 @@ class ImportacionController extends Controller
                 $copiados,
             ));
         } catch (Throwable $e) {
-            Storage::disk('local')->delete($copiados);
+            Storage::disk()->delete($copiados);
             throw $e;
         }
 
         if ($carpeta) {
-            Storage::disk('local')->deleteDirectory($carpeta);
+            Storage::disk()->deleteDirectory($carpeta);
         }
 
         return response()->json($resultado, 201);
@@ -167,12 +167,12 @@ class ImportacionController extends Controller
         try {
             $resultado = $extractor->extraer($request->file('comprimido'), $carpeta);
         } catch (Throwable $e) {
-            Storage::disk('local')->deleteDirectory($carpeta);
+            Storage::disk()->deleteDirectory($carpeta);
             throw $e;
         }
 
         if ($resultado['archivos'] === 0) {
-            Storage::disk('local')->deleteDirectory($carpeta);
+            Storage::disk()->deleteDirectory($carpeta);
             throw ValidationException::withMessages(['comprimido' => ['El comprimido no tiene imágenes ni PDF.']]);
         }
 
@@ -303,14 +303,14 @@ class ImportacionController extends Controller
                     continue;
                 }
                 $destino = "adjuntos/{$importacion->tenant_id}/".Str::random(40).'.'.strtolower(pathinfo($real, PATHINFO_EXTENSION));
-                Storage::disk('local')->copy("{$carpeta}/{$real}", $destino);
+                Storage::disk()->copy("{$carpeta}/{$real}", $destino);
                 $copiados[] = $destino;
 
                 $movimiento->adjuntos()->create([
                     'nombre' => $real,
                     'ruta' => $destino,
-                    'mime' => Storage::disk('local')->mimeType($destino) ?: 'application/octet-stream',
-                    'tamano' => Storage::disk('local')->size($destino),
+                    'mime' => Storage::disk()->mimeType($destino) ?: 'application/octet-stream',
+                    'tamano' => Storage::disk()->size($destino),
                 ]);
                 $adjuntosImportados++;
             }
@@ -448,10 +448,10 @@ class ImportacionController extends Controller
         $disponibles = [];
         if ($token = $request->input('comprimido')) {
             $carpeta = $this->carpetaTemporal($request, $token);
-            if (! Storage::disk('local')->directoryExists($carpeta)) {
+            if (! Storage::disk()->directoryExists($carpeta)) {
                 throw ValidationException::withMessages(['comprimido' => ['El comprimido ya no está disponible. Súbelo de nuevo.']]);
             }
-            foreach (Storage::disk('local')->files($carpeta) as $ruta) {
+            foreach (Storage::disk()->files($carpeta) as $ruta) {
                 $disponibles[mb_strtolower(basename($ruta))] = basename($ruta);
             }
         }

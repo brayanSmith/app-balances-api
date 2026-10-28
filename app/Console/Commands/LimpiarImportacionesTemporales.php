@@ -13,13 +13,15 @@ class LimpiarImportacionesTemporales extends Command
 
     public function handle(): int
     {
-        $disco = Storage::disk('local');
+        $disco = Storage::disk();
         $limite = now()->subHours((int) $this->option('horas'))->getTimestamp();
         $borradas = 0;
 
         foreach ($disco->directories('tmp/importaciones') as $carpetaTenant) {
             foreach ($disco->directories($carpetaTenant) as $carpeta) {
-                if (filemtime($disco->path($carpeta)) < $limite) {
+                // En un bucket las carpetas no tienen fecha: cuenta la del archivo más reciente.
+                $ultimo = collect($disco->files($carpeta))->map(fn ($ruta) => $disco->lastModified($ruta))->max() ?? 0;
+                if ($ultimo < $limite) {
                     $disco->deleteDirectory($carpeta);
                     $borradas++;
                 }

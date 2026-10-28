@@ -51,8 +51,8 @@ class CuentaController extends Controller
         });
 
         // Los archivos, una vez confirmado el borrado en la base de datos.
-        Storage::disk('local')->deleteDirectory("adjuntos/{$tenant->id}");
-        Storage::disk('local')->deleteDirectory("tmp/importaciones/{$tenant->id}");
+        Storage::disk()->deleteDirectory("adjuntos/{$tenant->id}");
+        Storage::disk()->deleteDirectory("tmp/importaciones/{$tenant->id}");
 
         return response()->json([
             'message' => 'Listo: tu cuenta quedó como nueva.',

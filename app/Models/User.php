@@ -27,7 +27,7 @@ class User extends Authenticatable
 
     protected static function booted(): void
     {
-        static::deleted(fn (User $user) => $user->foto && Storage::disk('local')->delete($user->foto));
+        static::deleted(fn (User $user) => $user->foto && Storage::disk()->delete($user->foto));
     }
 
     /**

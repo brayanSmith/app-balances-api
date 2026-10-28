@@ -26,7 +26,7 @@ class AdjuntoController extends Controller
 
         $adjunto = $movimiento->adjuntos()->create([
             'nombre' => $archivo->getClientOriginalName(),
-            'ruta' => $archivo->store("adjuntos/{$movimiento->tenant_id}", 'local'),
+            'ruta' => $archivo->store("adjuntos/{$movimiento->tenant_id}"),
             'mime' => $archivo->getMimeType(),
             'tamano' => $archivo->getSize(),
         ]);
@@ -46,7 +46,7 @@ class AdjuntoController extends Controller
      */
     public function archivo(Adjunto $adjunto): StreamedResponse
     {
-        return Storage::disk('local')->response($adjunto->ruta, $adjunto->nombre, [
+        return Storage::disk()->response($adjunto->ruta, $adjunto->nombre, [
             'Content-Type' => $adjunto->mime,
             'Cache-Control' => 'private, max-age=1800',
         ], 'inline');

@@ -18,7 +18,7 @@ class Adjunto extends Model
 
     protected static function booted(): void
     {
-        static::deleted(fn (Adjunto $adjunto) => Storage::disk('local')->delete($adjunto->ruta));
+        static::deleted(fn (Adjunto $adjunto) => Storage::disk()->delete($adjunto->ruta));
     }
 
     /**

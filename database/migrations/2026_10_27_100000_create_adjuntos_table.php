@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('movimiento_id')->constrained()->cascadeOnDelete();
             $table->string('nombre'); // nombre original del archivo
-            $table->string('ruta'); // en el disco "local" (privado)
+            $table->string('ruta'); // en el disco por defecto (privado: local o el bucket en Laravel Cloud)
             $table->string('mime', 100);
             $table->unsignedInteger('tamano'); // bytes
             $table->timestamps();

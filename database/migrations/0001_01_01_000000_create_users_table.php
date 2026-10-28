@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('foto')->nullable(); // ruta de la foto de perfil en el disco "local" (privado)
+            $table->string('foto')->nullable(); // ruta de la foto de perfil en el disco por defecto (privado)
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('is_super_admin')->default(false);

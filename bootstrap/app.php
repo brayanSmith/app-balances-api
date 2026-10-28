@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Es solo una API: sin token se responde 401 en vez de redirigir a un login web.
         $middleware->redirectGuestsTo(fn () => null);
+
+        // En Laravel Cloud la petición llega por su balanceador: se le cree el
+        // protocolo (https) y el host, si no los enlaces firmados saldrían con http.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -26,19 +27,34 @@ class ExtractorComprimido
     public const MAX_ENTRADAS = 5000;
 
     /**
-     * @param  string  $destino  carpeta en el disco "local"
+     * Extrae en una carpeta temporal del servidor (ZipArchive y 7-Zip necesitan rutas
+     * reales) y sube lo extraído a $destino en el disco por defecto, que en Laravel
+     * Cloud es el bucket: así lo encuentra la petición de importar aunque la atienda
+     * otra instancia.
+     *
+     * @param  string  $destino  carpeta en el disco por defecto
      * @return array{archivos: int, omitidos: list<string>}
      */
     public function extraer(UploadedFile $comprimido, string $destino): array
     {
-        Storage::disk('local')->makeDirectory($destino);
-        $carpeta = Storage::disk('local')->path($destino);
+        $carpeta = sys_get_temp_dir().'/balances-extraccion-'.Str::random(16);
+        File::ensureDirectoryExists($carpeta);
 
-        return match (strtolower($comprimido->getClientOriginalExtension())) {
-            'zip' => $this->extraerZip($comprimido->getRealPath(), $carpeta),
-            'rar' => $this->extraerRar($comprimido->getRealPath(), $carpeta),
-            default => throw ValidationException::withMessages(['comprimido' => ['Sube un archivo ZIP o RAR.']]),
-        };
+        try {
+            $resultado = match (strtolower($comprimido->getClientOriginalExtension())) {
+                'zip' => $this->extraerZip($comprimido->getRealPath(), $carpeta),
+                'rar' => $this->extraerRar($comprimido->getRealPath(), $carpeta),
+                default => throw ValidationException::withMessages(['comprimido' => ['Sube un archivo ZIP o RAR.']]),
+            };
+
+            foreach (File::files($carpeta) as $archivo) {
+                Storage::disk()->putFileAs($destino, new HttpFile($archivo->getPathname()), $archivo->getFilename());
+            }
+
+            return $resultado;
+        } finally {
+            File::deleteDirectory($carpeta);
+        }
     }
 
     /**

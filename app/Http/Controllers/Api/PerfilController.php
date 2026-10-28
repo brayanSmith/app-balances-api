@@ -79,9 +79,9 @@ class PerfilController extends Controller
         $user = $request->user();
         $anterior = $user->foto;
 
-        $user->forceFill(['foto' => $request->file('foto')->store("fotos/{$user->id}", 'local')])->save();
+        $user->forceFill(['foto' => $request->file('foto')->store("fotos/{$user->id}")])->save();
         if ($anterior) {
-            Storage::disk('local')->delete($anterior);
+            Storage::disk()->delete($anterior);
         }
 
         return response()->json($user->load('tenant'));
@@ -92,7 +92,7 @@ class PerfilController extends Controller
         $user = $request->user();
 
         if ($user->foto) {
-            Storage::disk('local')->delete($user->foto);
+            Storage::disk()->delete($user->foto);
             $user->forceFill(['foto' => null])->save();
         }
 
@@ -104,9 +104,9 @@ class PerfilController extends Controller
      */
     public function foto(User $user): StreamedResponse
     {
-        abort_unless($user->foto && Storage::disk('local')->exists($user->foto), 404);
+        abort_unless($user->foto && Storage::disk()->exists($user->foto), 404);
 
-        return Storage::disk('local')->response($user->foto, null, [
+        return Storage::disk()->response($user->foto, null, [
             'Cache-Control' => 'private, max-age=604800',
         ], 'inline');
     }
