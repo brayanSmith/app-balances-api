@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CuentaController;
 use App\Http\Controllers\Api\ImportacionController;
 use App\Http\Controllers\Api\MovimientoController;
 use App\Http\Controllers\Api\ProgramacionController;
+use App\Http\Controllers\Api\RecuperarPasswordController;
 use Illuminate\Support\Facades\Route;
 
 // La app la consulta para saber si hay conexión con el servidor (modo sin conexión).
@@ -14,6 +15,10 @@ Route::get('/ping', fn () => response()->json(['ok' => true]));
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Recuperar la contraseña con un código enviado al correo.
+Route::post('/password/codigo', [RecuperarPasswordController::class, 'enviarCodigo'])->middleware('throttle:5,1');
+Route::post('/password/restablecer', [RecuperarPasswordController::class, 'restablecer'])->middleware('throttle:10,1');
 
 // Ver un adjunto: sin token, protegido por el enlace firmado y temporal.
 Route::get('/adjuntos/{adjunto}/archivo', [AdjuntoController::class, 'archivo'])
