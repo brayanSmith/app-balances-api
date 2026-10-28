@@ -23,11 +23,6 @@ return new class extends Migration
             $table->unsignedInteger('omitidos'); // con error, si se eligió omitirlos
             $table->timestamps();
         });
-
-        Schema::table('movimientos', function (Blueprint $table) {
-            $table->foreignId('importacion_id')->nullable()->after('programacion_id')
-                ->constrained('importaciones')->nullOnDelete();
-        });
     }
 
     /**
@@ -35,10 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('movimientos', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('importacion_id');
-        });
-
         Schema::dropIfExists('importaciones');
     }
 };

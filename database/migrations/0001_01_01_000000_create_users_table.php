@@ -13,10 +13,13 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('foto')->nullable(); // ruta de la foto de perfil en el disco "local" (privado)
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('is_super_admin')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // Solo la regla de repetición. Los datos (monto, descripción...) salen del
-        // movimiento base; movimiento_base_id se agrega después de crear movimientos.
+        // movimiento base; movimiento_base_id se agrega al crear movimientos (se referencian entre sí).
         Schema::create('programaciones', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
