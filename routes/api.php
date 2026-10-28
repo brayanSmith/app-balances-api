@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdjuntoController;
+use App\Http\Controllers\Api\AnalisisController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoriaController;
 use App\Http\Controllers\Api\CuentaController;
@@ -43,6 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/perfil/password', [PerfilController::class, 'password'])->middleware('throttle:5,1');
     Route::post('/perfil/foto', [PerfilController::class, 'subirFoto']);
     Route::delete('/perfil/foto', [PerfilController::class, 'quitarFoto']);
+
+    Route::get('/analisis', AnalisisController::class);
 
     Route::get('/movimientos/resumen', [MovimientoController::class, 'resumen']);
     Route::apiResource('movimientos', MovimientoController::class);
