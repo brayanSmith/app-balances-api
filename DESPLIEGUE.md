@@ -35,6 +35,8 @@ APP_ENV=production
 APP_DEBUG=false
 APP_LOCALE=es
 APP_FALLBACK_LOCALE=es
+# Si no, "hoy" cambia a las 7 p. m. de Colombia (vencimientos, historial, proyección).
+APP_TIMEZONE=America/Bogota
 
 LOG_LEVEL=warning
 
@@ -61,13 +63,16 @@ MAIL_FROM_NAME=Balances
 
 ## 2. App Android con EAS
 
-1. En `mobile/eas.json`, reemplaza `https://CAMBIAR-POR-TU-DOMINIO/api` (en los dos perfiles) por la URL real de la API, terminada en `/api`.
-2. Instala y enlaza EAS (una sola vez):
+1. Instala y enlaza EAS (una sola vez):
    ```powershell
    npm install -g eas-cli
    cd C:\laragon\www\balances\mobile
    eas login
    eas init        # crea el proyecto en expo.dev y agrega su id a app.json
+   ```
+2. La URL de la API y el ID de cliente de Google son **variables de entorno de EAS** (expo.dev → proyecto → Environment variables), en los entornos `development`, `preview` y `production`. Se usan al compilar **y** al publicar actualizaciones. Para cambiarlas:
+   ```powershell
+   eas env:create --name EXPO_PUBLIC_API_URL --value https://TU-API/api --environment development --environment preview --environment production --visibility plaintext --force
    ```
 3. **APK de prueba** (se instala directo en el celular):
    ```powershell
@@ -112,8 +117,43 @@ La app usa el selector de cuentas nativo de Android y la API verifica con Google
   ```dotenv
   GOOGLE_CLIENT_IDS=TU_ID_DE_CLIENTE_WEB.apps.googleusercontent.com
   ```
-- **App** → en `mobile/eas.json`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` con el mismo ID de cliente **Web** (en los dos perfiles), y compila de nuevo. Sin ese valor el botón no aparece.
+- **App** → variable de EAS `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` con el mismo ID de cliente **Web** (como en el paso 2 de la sección 2). Sin ese valor el botón no aparece.
 
 > El botón no funciona en Expo Go (es un módulo nativo); se prueba con el APK de EAS.
 >
 > Para iPhone hará falta un cliente iOS y agregar el plugin `@react-native-google-signin/google-signin` en `app.json` con su `iosUrlScheme`.
+
+## 5. Probar cambios sin volver a compilar
+
+### Development build (día a día)
+
+Es un APK que se compila **una vez** y carga el código en vivo desde tu PC. Incluye los módulos nativos (Google, notificaciones, fotos), a diferencia de Expo Go.
+
+1. Compílalo e instálalo (una vez, o cuando se agregue una librería nativa nueva):
+   ```powershell
+   eas build -p android --profile development
+   ```
+2. En la PC, con el celular en la **misma red Wi-Fi**:
+   ```powershell
+   cd C:\laragon\www\balances\mobile
+   npx expo start
+   ```
+3. Abre **Balances** en el celular y elige tu PC, o escanea el QR de la terminal. Cada cambio en el código se ve en segundos.
+
+> El development build y el APK de prueba son la misma app (`com.brayansmith.balances`): instalar uno reemplaza al otro. Para volver a probar como un usuario normal, reinstala el APK de prueba.
+
+La API a la que apunta sale de tu `mobile/.env` (`EXPO_PUBLIC_API_URL`): la de Laragon (`http://IP-DE-TU-PC:8001/api`) o la de producción. Si cambias el `.env`, reinicia `npx expo start`.
+
+### EAS Update (arreglos para quien ya tiene la app)
+
+Publica el código nuevo "por el aire" a los APK de prueba o a la versión de Google Play, sin compilar ni pasar por la fila:
+
+```powershell
+cd C:\laragon\www\balances\mobile
+npm run actualizar:prueba -- "Arreglo del historial"        # APK de prueba (canal preview)
+npm run actualizar:produccion -- "Arreglo del historial"    # Google Play (canal production)
+```
+
+La app la descarga al abrirse y la aplica la siguiente vez que se abre.
+
+Solo sirve para cambios de **JavaScript** (pantallas, lógica, estilos). Si se agrega una librería nativa, hay que compilar de nuevo: la app usa `runtimeVersion: fingerprint`, así que una actualización nunca llega a un APK que no tenga lo nativo que necesita.
