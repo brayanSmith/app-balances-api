@@ -123,4 +123,36 @@ class HistorialTest extends TestCase
         $this->assertEquals(0, array_sum(array_column($evolucion['puntos'], 'ingresos')));
         $this->assertEquals(195000, array_sum(array_column($evolucion['puntos'], 'gastos')));
     }
+
+    public function test_todo_muestra_todo_y_agrupa_por_mes_desde_el_primer_movimiento(): void
+    {
+        $this->travelTo('2026-10-27');
+
+        $this->getJson('/api/movimientos?hasta=2026-10-27')->assertJsonCount(5, 'data');
+
+        $resumen = $this->getJson('/api/movimientos/resumen?hasta=2026-10-27&agrupacion=mes')
+            ->assertJson(['ingresos' => 3000000, 'gastos' => 275000])
+            ->json('evolucion');
+
+        $this->assertSame('mes', $resumen['agrupacion']);
+        // El primer movimiento es del 20 dic 2025: de ahí hasta octubre son 11 meses.
+        $this->assertSame('2025-12-20', $resumen['puntos'][0]['desde']);
+        $this->assertSame('2026-10-01', end($resumen['puntos'])['desde']);
+        $this->assertCount(11, $resumen['puntos']);
+    }
+
+    public function test_todo_sin_movimientos_no_trae_evolucion(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->getJson('/api/movimientos/resumen?hasta=2026-10-27&agrupacion=mes')
+            ->assertOk()
+            ->assertJsonPath('evolucion', null);
+    }
+
+    public function test_valida_la_agrupacion(): void
+    {
+        $this->getJson('/api/movimientos/resumen?desde=2026-10-01&hasta=2026-10-27&agrupacion=quincena')
+            ->assertJsonValidationErrors('agrupacion');
+    }
 }

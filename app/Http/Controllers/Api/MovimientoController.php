@@ -8,12 +8,12 @@ use App\Http\Resources\MovimientoResource;
 use App\Models\Movimiento;
 use App\Models\Programacion;
 use Carbon\CarbonPeriod;
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class MovimientoController extends Controller
@@ -85,24 +85,31 @@ class MovimientoController extends Controller
      * Ingresos y gastos del período agrupados en el tiempo (gráfico del historial).
      * La agrupación depende del largo: por día hasta un mes, por semana hasta tres
      * meses, por mes hasta cinco años y por año después. Los periodos sin
-     * movimientos van en 0 y no se pasa de hoy.
+     * movimientos van en 0 y no se pasa de hoy. Con `agrupacion` se fuerza una, y
+     * sin `desde` (período "Todo") arranca en el primer movimiento.
      *
      * @return array{agrupacion: string, puntos: list<array{desde: string, ingresos: float, gastos: float}>}|null
      */
     private function evolucion(Request $request): ?array
     {
-        if (! $request->query('desde') || ! $request->query('hasta')) {
+        $request->validate(['agrupacion' => ['nullable', 'in:dia,semana,mes,anio']]);
+
+        if (! $request->query('hasta')) {
             return null;
         }
+        $desde = $request->query('desde') ?? $this->filtrados($request)->min('fecha');
+        if (! $desde) {
+            return null; // "Todo" sin ningún movimiento
+        }
 
-        $inicio = Carbon::parse($request->query('desde'))->startOfDay();
+        $inicio = Carbon::parse($desde)->startOfDay();
         $fin = Carbon::parse($request->query('hasta'))->startOfDay()->min(today());
         if ($inicio->gt($fin)) {
             return null;
         }
 
         $dias = $inicio->diffInDays($fin) + 1;
-        $agrupacion = match (true) {
+        $agrupacion = $request->query('agrupacion') ?? match (true) {
             $dias <= 31 => 'dia',
             $dias <= 92 => 'semana',
             $dias <= 366 * 5 => 'mes',
