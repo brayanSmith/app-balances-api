@@ -87,3 +87,33 @@ Las migraciones crean la base vacía. Si quieres llevarte lo que tienes en Larag
 
 1. **Base de datos:** exporta `balances` desde HeidiSQL (solo datos, sin la tabla `migrations`) e impórtala en la MySQL de Cloud con los datos de conexión de su panel.
 2. **Archivos:** sube el contenido de `storage/app/private/` (carpetas `adjuntos/` y `fotos/`) al bucket, manteniendo las mismas rutas.
+
+## 4. Iniciar sesión con Google
+
+La app usa el selector de cuentas nativo de Android y la API verifica con Google el *ID token* que recibe. Hay que crear dos credenciales en Google Cloud (gratis).
+
+### En Google Cloud Console
+
+1. En [console.cloud.google.com](https://console.cloud.google.com), crea un proyecto (por ejemplo "Balances").
+2. **APIs y servicios → Pantalla de consentimiento de OAuth** (o **Google Auth Platform**):
+   - Tipo **Externo**, nombre "Balances", tu correo de soporte.
+   - Alcances: los básicos (`email`, `profile`, `openid`), que no necesitan revisión de Google.
+   - Mientras esté en modo **Prueba**, solo pueden entrar los correos que agregues como usuarios de prueba. Publícala cuando la app salga a producción.
+3. **Credenciales → Crear credenciales → ID de cliente de OAuth**, dos veces:
+   - **Web** (nombre "Balances API"). Copia su **ID de cliente**: es el que usan la app y la API.
+   - **Android**:
+     - Nombre del paquete: `com.brayansmith.balances`.
+     - Huella **SHA-1** de la llave con la que EAS firma la app. Está en [expo.dev](https://expo.dev/accounts/brayansmith/projects/balances/credentials) → Credentials → Android → `com.brayansmith.balances`, o en `eas credentials -p android`.
+     - Cuando publiques en Google Play, crea **otro** cliente Android con la SHA-1 de *App signing* de Play Console (Configuración → Integridad de la app): Google vuelve a firmar la app con su propia llave.
+
+### Configurar
+
+- **Laravel Cloud** → variables de entorno, y vuelve a desplegar:
+  ```dotenv
+  GOOGLE_CLIENT_IDS=TU_ID_DE_CLIENTE_WEB.apps.googleusercontent.com
+  ```
+- **App** → en `mobile/eas.json`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` con el mismo ID de cliente **Web** (en los dos perfiles), y compila de nuevo. Sin ese valor el botón no aparece.
+
+> El botón no funciona en Expo Go (es un módulo nativo); se prueba con el APK de EAS.
+>
+> Para iPhone hará falta un cliente iOS y agregar el plugin `@react-native-google-signin/google-signin` en `app.json` con su `iosUrlScheme`.

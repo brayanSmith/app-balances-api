@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AnalisisController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoriaController;
 use App\Http\Controllers\Api\CuentaController;
+use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\ImportacionController;
 use App\Http\Controllers\Api\MovimientoController;
 use App\Http\Controllers\Api\PerfilController;
@@ -17,6 +18,7 @@ Route::get('/ping', fn () => response()->json(['ok' => true]));
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/auth/google', GoogleAuthController::class)->middleware('throttle:10,1');
 
 // Recuperar la contraseña con un código enviado al correo.
 Route::post('/password/codigo', [RecuperarPasswordController::class, 'enviarCodigo'])->middleware('throttle:5,1');

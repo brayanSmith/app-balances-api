@@ -15,11 +15,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token', 'foto'])]
-#[Appends(['foto_url'])]
+#[Hidden(['password', 'remember_token', 'foto', 'google_id'])]
+#[Appends(['foto_url', 'tiene_password'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -67,5 +68,24 @@ class User extends Authenticatable
                 'v' => substr(md5($this->foto), 0, 8),
             ])
             : null);
+    }
+
+    /**
+     * false si se registró con Google y todavía no creó una contraseña: la app
+     * muestra "Crear contraseña" en vez de pedir la actual.
+     */
+    protected function tienePassword(): Attribute
+    {
+        return Attribute::get(fn () => $this->password !== null);
+    }
+
+    /** Cambiar el correo o borrar los datos piden la contraseña: sin ella, primero hay que crearla. */
+    public function exigirPassword(string $campo, string $para): void
+    {
+        if ($this->password === null) {
+            throw ValidationException::withMessages([
+                $campo => ["Entraste con Google: para {$para}, primero crea una contraseña en Mi perfil."],
+            ]);
+        }
     }
 }

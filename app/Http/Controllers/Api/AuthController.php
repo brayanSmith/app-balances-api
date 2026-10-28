@@ -45,6 +45,12 @@ class AuthController extends Controller
 
         $user = User::where('email', $data['email'])->first();
 
+        if ($user && $user->password === null) {
+            throw ValidationException::withMessages([
+                'email' => ['Esta cuenta entra con Google. Usa «Continuar con Google» o crea una contraseña con «¿Olvidaste tu contraseña?».'],
+            ]);
+        }
+
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Correo o contraseña incorrectos.'],

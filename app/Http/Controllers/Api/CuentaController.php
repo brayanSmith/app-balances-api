@@ -22,6 +22,8 @@ class CuentaController extends Controller
      */
     public function restablecer(Request $request): JsonResponse
     {
+        $request->user()->exigirPassword('password', 'borrar tus datos');
+
         $request->validate([
             'confirmacion' => ['required', 'in:BORRAR'],
             'password' => ['required', 'current_password:sanctum'],

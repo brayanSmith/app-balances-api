@@ -20,6 +20,10 @@ class PerfilController extends Controller
     {
         $user = $request->user();
 
+        if ($request->input('email') !== $user->email) {
+            $user->exigirPassword('password_actual', 'cambiar el correo');
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
@@ -45,11 +49,16 @@ class PerfilController extends Controller
         return response()->json($user->load('tenant'));
     }
 
+    /**
+     * Cambia la contraseña, o la crea si entró con Google y aún no tiene (sin pedir la actual).
+     */
     public function password(Request $request): JsonResponse
     {
+        $tiene = $request->user()->password !== null;
+
         $request->validate([
-            'password_actual' => ['required', 'current_password:sanctum'],
-            'password' => ['required', 'string', 'min:8', 'confirmed', 'different:password_actual'],
+            'password_actual' => $tiene ? ['required', 'current_password:sanctum'] : ['prohibited'],
+            'password' => ['required', 'string', 'min:8', 'confirmed', ...($tiene ? ['different:password_actual'] : [])],
         ], [
             'password_actual.current_password' => 'La contraseña actual no es correcta.',
             'password.confirmed' => 'Las contraseñas nuevas no coinciden.',
