@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CategoriaController;
 use App\Http\Controllers\Api\CuentaController;
 use App\Http\Controllers\Api\ImportacionController;
 use App\Http\Controllers\Api\MovimientoController;
+use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\ProgramacionController;
 use App\Http\Controllers\Api\RecuperarPasswordController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,11 @@ Route::get('/adjuntos/{adjunto}/archivo', [AdjuntoController::class, 'archivo'])
     ->middleware('signed')
     ->name('adjuntos.archivo');
 
+// Foto de perfil: igual, con enlace firmado (la usa <Image> en la app).
+Route::get('/perfil/foto/{user}', [PerfilController::class, 'foto'])
+    ->middleware('signed')
+    ->name('perfil.foto');
+
 // CSV de ejemplo para importar (no tiene datos del usuario).
 Route::get('/importaciones/plantilla', [ImportacionController::class, 'plantilla']);
 
@@ -32,6 +38,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/cuenta/restablecer', [CuentaController::class, 'restablecer'])->middleware('throttle:5,1');
+
+    Route::put('/perfil', [PerfilController::class, 'update']);
+    Route::put('/perfil/password', [PerfilController::class, 'password'])->middleware('throttle:5,1');
+    Route::post('/perfil/foto', [PerfilController::class, 'subirFoto']);
+    Route::delete('/perfil/foto', [PerfilController::class, 'quitarFoto']);
 
     Route::get('/movimientos/resumen', [MovimientoController::class, 'resumen']);
     Route::apiResource('movimientos', MovimientoController::class);
