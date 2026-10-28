@@ -8,8 +8,10 @@ use App\Models\Categoria;
 use App\Models\Importacion;
 use App\Models\Movimiento;
 use App\Models\Programacion;
+use App\Services\EliminadorDeCuenta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -60,5 +62,27 @@ class CuentaController extends Controller
             'message' => 'Listo: tu cuenta quedó como nueva.',
             'borrados' => $borrados,
         ]);
+    }
+
+    /**
+     * Elimina la cuenta y todos sus datos, sin vuelta atrás. Pide escribir ELIMINAR
+     * y, si la cuenta tiene contraseña, la contraseña (quien entró solo con Google no tiene).
+     */
+    public function eliminar(Request $request, EliminadorDeCuenta $eliminador): Response
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'confirmacion' => ['required', 'in:ELIMINAR'],
+            'password' => $user->password !== null ? ['required', 'current_password:sanctum'] : ['nullable'],
+        ], [
+            'confirmacion.in' => 'Escribe ELIMINAR (en mayúsculas) para confirmar.',
+            'password.required' => 'Escribe tu contraseña para confirmar.',
+            'password.current_password' => 'La contraseña no es correcta.',
+        ]);
+
+        $eliminador->eliminar($user);
+
+        return response()->noContent();
     }
 }

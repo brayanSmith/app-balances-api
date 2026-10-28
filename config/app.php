@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // Correo de contacto que se muestra en la política de privacidad y en /eliminar-cuenta.
+    'contacto' => env('CONTACTO_EMAIL', env('MAIL_FROM_ADDRESS')),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

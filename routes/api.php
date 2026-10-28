@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/cuenta/restablecer', [CuentaController::class, 'restablecer'])->middleware('throttle:5,1');
+    Route::delete('/cuenta', [CuentaController::class, 'eliminar'])->middleware('throttle:5,1');
 
     Route::put('/perfil', [PerfilController::class, 'update']);
     Route::put('/perfil/password', [PerfilController::class, 'password'])->middleware('throttle:5,1');
