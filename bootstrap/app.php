@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SoloSuperAdmin;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -19,8 +23,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Es solo una API: sin token se responde 401 en vez de redirigir a un login web.
-        $middleware->redirectGuestsTo(fn () => null);
+        // La API responde 401 sin token; el panel web (/admin) lleva al login.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : route('login'));
+
+        // Panel web (Inertia + React, del starter kit).
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        $middleware->web(append: [
+            HandleAppearance::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
+        ]);
+        $middleware->alias(['super-admin' => SoloSuperAdmin::class]);
 
         // En Laravel Cloud la petición llega por su balanceador: se le cree el
         // protocolo (https) y el host, si no los enlaces firmados saldrían con http.
