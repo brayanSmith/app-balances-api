@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Appends;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -21,10 +23,15 @@ use Laravel\Sanctum\HasApiTokens;
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token', 'foto', 'google_id'])]
 #[Appends(['foto_url', 'tiene_password'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
+
+    // Para que el usuario recién registrado ya lo traiga en la respuesta (sin volver a leerlo).
+    protected $attributes = [
+        'almacenamiento' => 'nube',
+    ];
 
     protected static function booted(): void
     {
@@ -43,6 +50,13 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
         ];
+    }
+
+    /** El panel /admin es solo para el super admin (ver SuperAdminSeeder). */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Recién creado (sin volver a leerlo) todavía no trae el valor por defecto de la columna.
+        return $this->is_super_admin === true;
     }
 
     public function tenant(): BelongsTo

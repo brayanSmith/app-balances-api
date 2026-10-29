@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Concerns\Sincronizable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['tipo', 'monto', 'descripcion', 'categoria_id', 'fecha'])]
 class Movimiento extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, Sincronizable;
 
     protected static function booted(): void
     {
@@ -42,6 +43,16 @@ class Movimiento extends Model
                 ? $programacion->base()->associate($nuevaBase)->save()
                 : $programacion->delete();
         });
+    }
+
+    /**
+     * En las rutas, la app actual usa el uuid y las versiones anteriores el id numérico.
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $columna = $field ?? (ctype_digit((string) $value) ? 'id' : 'uuid');
+
+        return static::query()->where($columna, $value)->first();
     }
 
     /**

@@ -3,17 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Adjunto;
 use App\Models\Categoria;
-use App\Models\Importacion;
-use App\Models\Movimiento;
-use App\Models\Programacion;
 use App\Services\EliminadorDeCuenta;
+use App\Services\VaciadorDeDatos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class CuentaController extends Controller
 {
@@ -21,8 +17,10 @@ class CuentaController extends Controller
      * Deja la cuenta "de fábrica": borra movimientos, comprobantes, programados,
      * importaciones y categorías del tenant, y vuelve a crear las predeterminadas.
      * Los usuarios y la sesión se conservan. Pide la contraseña y escribir BORRAR.
+     * Si la cuenta guarda solo en el teléfono, aquí solo se confirma la contraseña:
+     * la app borra sus datos.
      */
-    public function restablecer(Request $request): JsonResponse
+    public function restablecer(Request $request, VaciadorDeDatos $vaciador): JsonResponse
     {
         $request->user()->exigirPassword('password', 'borrar tus datos');
 
@@ -34,34 +32,34 @@ class CuentaController extends Controller
             'password.current_password' => 'La contraseña no es correcta.',
         ]);
 
-        $tenant = $request->user()->tenant;
+        $user = $request->user();
+        $tenant = $user->tenant;
 
-        $borrados = DB::transaction(function () use ($tenant) {
-            // Sin el scope global para que quede explícito qué tenant se borra.
-            $delTenant = fn (string $modelo) => $modelo::withoutGlobalScopes()->where('tenant_id', $tenant->id);
-
-            // Orden: primero lo que depende de otros registros.
-            $borrados = [
-                'adjuntos' => $delTenant(Adjunto::class)->delete(),
-                'movimientos' => $delTenant(Movimiento::class)->delete(),
-                'programaciones' => $delTenant(Programacion::class)->delete(),
-                'importaciones' => $delTenant(Importacion::class)->delete(),
-                'categorias' => $delTenant(Categoria::class)->delete(),
-            ];
-
-            $tenant->categorias()->createMany(Categoria::PREDETERMINADAS);
-
-            return $borrados;
-        });
-
-        // Los archivos, una vez confirmado el borrado en la base de datos.
-        Storage::disk()->deleteDirectory("adjuntos/{$tenant->id}");
-        Storage::disk()->deleteDirectory("tmp/importaciones/{$tenant->id}");
+        $borrados = $user->almacenamiento === 'local'
+            ? []
+            : $vaciador->vaciar($tenant, avisarBorrados: true, despues: fn () => $tenant->categorias()->createMany(Categoria::PREDETERMINADAS));
 
         return response()->json([
             'message' => 'Listo: tu cuenta quedó como nueva.',
             'borrados' => $borrados,
         ]);
+    }
+
+    /**
+     * La cuenta pasó a guardar solo en el teléfono y la app ya bajó todo (también los
+     * comprobantes): se borran sus datos del servidor para liberar espacio.
+     */
+    public function liberarNube(Request $request, VaciadorDeDatos $vaciador): Response
+    {
+        if ($request->user()->almacenamiento !== 'local') {
+            throw ValidationException::withMessages([
+                'almacenamiento' => ['Esta cuenta guarda sus datos en la nube: no se pueden borrar del servidor.'],
+            ]);
+        }
+
+        $vaciador->vaciar($request->user()->tenant, avisarBorrados: false);
+
+        return response()->noContent();
     }
 
     /**

@@ -7,12 +7,21 @@ use App\Http\Resources\AdjuntoResource;
 use App\Models\Adjunto;
 use App\Models\Movimiento;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdjuntoController extends Controller
 {
+    /**
+     * Comprobantes de un movimiento (la app los pide al abrirlo; sus datos vienen de /api/sync).
+     */
+    public function index(Movimiento $movimiento): AnonymousResourceCollection
+    {
+        return AdjuntoResource::collection($movimiento->adjuntos()->oldest('id')->get());
+    }
+
     public function store(Request $request, Movimiento $movimiento): AdjuntoResource
     {
         $request->validate([

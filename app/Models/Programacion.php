@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Concerns\Sincronizable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,9 +14,15 @@ use Illuminate\Support\Facades\DB;
 #[Fillable(['intervalo', 'frecuencia', 'fecha_fin'])]
 class Programacion extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, Sincronizable;
 
     protected $table = 'programaciones';
+
+    protected static function booted(): void
+    {
+        // La llave ya los suelta, pero así cambia su updated_at y /api/sync lo envía.
+        static::deleting(fn (Programacion $programacion) => $programacion->movimientos()->update(['programacion_id' => null]));
+    }
 
     protected $attributes = [
         'intervalo' => 1,

@@ -16,6 +16,9 @@ class Adjunto extends Model
 
     protected $table = 'adjuntos';
 
+    // Cambia el updated_at del movimiento: así /api/sync envía su nuevo adjuntos_count.
+    protected $touches = ['movimiento'];
+
     protected static function booted(): void
     {
         static::deleted(fn (Adjunto $adjunto) => Storage::disk()->delete($adjunto->ruta));

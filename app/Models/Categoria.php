@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Concerns\Sincronizable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,9 +11,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['tipo', 'nombre', 'icono', 'color'])]
 class Categoria extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, Sincronizable;
 
     protected $table = 'categorias';
+
+    protected static function booted(): void
+    {
+        // La llave ya los deja sin categoría, pero así cambia su updated_at y /api/sync lo envía.
+        static::deleting(fn (Categoria $categoria) => $categoria->movimientos()->update(['categoria_id' => null]));
+    }
 
     /**
      * Categorías con las que arranca cada tenant (íconos de Ionicons).

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\MovimientoController;
 use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\ProgramacionController;
 use App\Http\Controllers\Api\RecuperarPasswordController;
+use App\Http\Controllers\Api\SincronizacionController;
 use Illuminate\Support\Facades\Route;
 
 // La app la consulta para saber si hay conexión con el servidor (modo sin conexión).
@@ -42,16 +43,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/cuenta/restablecer', [CuentaController::class, 'restablecer'])->middleware('throttle:5,1');
     Route::delete('/cuenta', [CuentaController::class, 'eliminar'])->middleware('throttle:5,1');
+    // La cuenta pasó a "solo en el teléfono" y la app ya bajó todo: se borra del servidor.
+    Route::post('/cuenta/liberar-nube', [CuentaController::class, 'liberarNube'])->middleware('throttle:5,1,liberar-nube');
 
     Route::put('/perfil', [PerfilController::class, 'update']);
     Route::put('/perfil/password', [PerfilController::class, 'password'])->middleware('throttle:5,1');
     Route::post('/perfil/foto', [PerfilController::class, 'subirFoto']);
     Route::delete('/perfil/foto', [PerfilController::class, 'quitarFoto']);
 
+    // Base SQLite de la app: bajar y subir cambios. Cada límite lleva su propio contador
+    // (el tercer parámetro); sin él, todas las rutas con throttle del usuario comparten uno.
+    Route::get('/sync', [SincronizacionController::class, 'pull'])->middleware('throttle:60,1,sync-pull');
+    Route::post('/sync', [SincronizacionController::class, 'push'])->middleware('throttle:60,1,sync-push');
+
     Route::get('/analisis', AnalisisController::class);
 
     Route::get('/movimientos/resumen', [MovimientoController::class, 'resumen']);
     Route::apiResource('movimientos', MovimientoController::class);
+    Route::get('/movimientos/{movimiento}/adjuntos', [AdjuntoController::class, 'index']);
     Route::post('/movimientos/{movimiento}/adjuntos', [AdjuntoController::class, 'store']);
     Route::delete('/adjuntos/{adjunto}', [AdjuntoController::class, 'destroy']);
 
