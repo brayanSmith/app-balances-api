@@ -19,14 +19,35 @@ class AlmacenamientoTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_las_cuentas_nuevas_guardan_en_la_nube_y_la_api_lo_informa(): void
+    public function test_las_cuentas_nuevas_guardan_solo_en_el_telefono_y_no_ocupan_el_servidor(): void
     {
+        $this->postJson('/api/register', ['name' => 'Ana', 'email' => 'ana@prueba.test', 'password' => 'secreto123'])
+            ->assertCreated()
+            ->assertJsonPath('user.almacenamiento', 'local');
+
+        // Las categorías predeterminadas las crea la app en el teléfono.
+        $this->assertSame(0, Categoria::withoutGlobalScopes()->count());
+        Sanctum::actingAs(User::sole());
+        $this->getJson('/api/user')->assertJsonPath('almacenamiento', 'local');
+    }
+
+    public function test_con_almacenamiento_inicial_nube_las_cuentas_nuevas_sincronizan(): void
+    {
+        config(['balances.almacenamiento_inicial' => 'nube']);
+
         $this->postJson('/api/register', ['name' => 'Ana', 'email' => 'ana@prueba.test', 'password' => 'secreto123'])
             ->assertCreated()
             ->assertJsonPath('user.almacenamiento', 'nube');
 
-        Sanctum::actingAs(User::sole());
-        $this->getJson('/api/user')->assertJsonPath('almacenamiento', 'nube');
+        $this->assertSame(14, Categoria::withoutGlobalScopes()->count());
+    }
+
+    public function test_un_valor_desconocido_en_la_configuracion_deja_la_cuenta_en_el_telefono(): void
+    {
+        config(['balances.almacenamiento_inicial' => 'otro']);
+
+        $this->postJson('/api/register', ['name' => 'Ana', 'email' => 'ana@prueba.test', 'password' => 'secreto123'])
+            ->assertJsonPath('user.almacenamiento', 'local');
     }
 
     public function test_el_almacenamiento_no_se_cambia_desde_la_api(): void

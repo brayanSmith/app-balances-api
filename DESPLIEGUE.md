@@ -38,6 +38,10 @@ APP_FALLBACK_LOCALE=es
 # Si no, "hoy" cambia a las 7 p. m. de Colombia (vencimientos, historial, proyección).
 APP_TIMEZONE=America/Bogota
 
+# Cuentas nuevas: "local" (solo en el teléfono, no ocupan el servidor) o "nube".
+# Cada cuenta se puede cambiar después en /admin.
+ALMACENAMIENTO_INICIAL=local
+
 LOG_LEVEL=warning
 
 # Correo real (recuperar contraseña). Ejemplo con Resend; con Brevo o Gmail cambian host, usuario y clave.

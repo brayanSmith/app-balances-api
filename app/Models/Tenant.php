@@ -21,6 +21,29 @@ class Tenant extends Model
         });
     }
 
+    /**
+     * Abre una cuenta nueva (registro o primer ingreso con Google): su tenant y su
+     * usuario, con el almacenamiento inicial de config/balances.php. Si es "solo en el
+     * teléfono", el servidor no guarda las categorías predeterminadas: las crea la app.
+     *
+     * @param  callable(Tenant): User  $crearUsuario
+     */
+    public static function abrirCuenta(string $nombre, callable $crearUsuario): User
+    {
+        $almacenamiento = config('balances.almacenamiento_inicial') === 'nube' ? 'nube' : 'local';
+
+        // Sin eventos no se dispara el created que crea las categorías.
+        $tenant = $almacenamiento === 'local'
+            ? static::withoutEvents(fn () => static::create(['nombre' => $nombre]))
+            : static::create(['nombre' => $nombre]);
+
+        $user = $crearUsuario($tenant);
+        // No está en $fillable a propósito: la API nunca debe poder elegirlo.
+        $user->forceFill(['almacenamiento' => $almacenamiento])->save();
+
+        return $user;
+    }
+
     public function categorias(): HasMany
     {
         return $this->hasMany(Categoria::class);

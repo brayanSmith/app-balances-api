@@ -64,7 +64,9 @@ class GoogleAuthTest extends TestCase
         $this->assertSame('1234567890', $user->google_id);
         $this->assertNull($user->password);
         $this->assertNotNull($user->email_verified_at);
-        $this->assertGreaterThan(0, $user->tenant->categorias()->count()); // con sus categorías predeterminadas
+        // Como cualquier cuenta nueva (config/balances.php): solo en el teléfono, sin datos en el servidor.
+        $this->assertSame('local', $user->almacenamiento);
+        $this->assertSame(0, $user->tenant->categorias()->count());
 
         Http::assertSent(fn ($r) => str_contains($r->url(), 'tokeninfo') && $r['id_token'] === 'token-de-google');
     }

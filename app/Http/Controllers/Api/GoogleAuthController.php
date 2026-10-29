@@ -41,14 +41,13 @@ class GoogleAuthController extends Controller
             } else {
                 $user = DB::transaction(function () use ($google) {
                     $nombre = $google['name'] ?? strstr($google['email'], '@', true);
-                    $tenant = Tenant::create(['nombre' => $nombre]);
 
-                    return $tenant->users()->forceCreate([
+                    return Tenant::abrirCuenta($nombre, fn (Tenant $tenant) => $tenant->users()->forceCreate([
                         'name' => $nombre,
                         'email' => $google['email'],
                         'google_id' => $google['sub'],
                         'email_verified_at' => now(),
-                    ]);
+                    ]));
                 });
                 $nuevo = true;
             }

@@ -24,11 +24,10 @@ class AuthController extends Controller
         ]);
 
         // Cada registro crea su propio tenant y el usuario queda dentro de él.
-        $user = DB::transaction(function () use ($data) {
-            $tenant = Tenant::create(['nombre' => $data['tenant_nombre'] ?? $data['name']]);
-
-            return $tenant->users()->create(Arr::except($data, 'tenant_nombre'));
-        });
+        $user = DB::transaction(fn () => Tenant::abrirCuenta(
+            $data['tenant_nombre'] ?? $data['name'],
+            fn (Tenant $tenant) => $tenant->users()->create(Arr::except($data, 'tenant_nombre')),
+        ));
 
         return response()->json([
             'user' => $user->load('tenant'),
